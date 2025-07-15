@@ -1,0 +1,94 @@
+version: '3.9'
+
+services:
+  auth-service:
+    build: 
+      context: ./services/auth-service
+    container_name: auth-service
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    networks:
+      - tracker-net
+    
+  gateway-service:
+    build:
+      context: ./services/gateway-service
+    container_name: gateway-service
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - auth-service
+    networks:
+      - tracker-net
+  
+  file-service:
+    build: 
+      context: .services/file-service
+    container_name: file-service
+    env_file:
+      - .env
+    networks:
+      - tracker-net
+  
+  tracker-service:
+    build:
+      context: ./services/tracker-service
+    container_name: tracker-service
+    env_file:
+      - .env
+    networks:
+      - tracker-net
+
+  node-service:
+    build:
+      context: ./services/node-service
+    container_name: node-service
+    env_file:
+      - .env
+    networks:
+      - tracker-net
+
+  event-service:
+    build:
+      context: ./services/event-service
+    container_name: event-service
+    env_file:
+      - .env
+    depends_on:
+      - rabbitmq
+    networks:
+      - tracker-net
+  
+  postgres:
+    image: postgres:14
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - tracker-net
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - tracker-net
+
+volumes:
+  pgdata:
+
+networks:
+  tracker-net:
+    driver: bridge
